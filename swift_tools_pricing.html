@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Swift Transport — Internal Tools</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0a;color:#f5f5f5;min-height:100vh}
+.lock-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
+.lock-card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:2.5rem;width:100%;max-width:360px;text-align:center}
+.logo-mark{width:56px;height:56px;margin:0 auto 1.5rem;background:#B8860B;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.lock-title{font-size:18px;font-weight:600;color:#f5f5f5;margin-bottom:6px}
+.lock-sub{font-size:13px;color:#888;margin-bottom:1.5rem}
+.lock-input{width:100%;padding:10px 14px;background:#111;border:1px solid #333;border-radius:8px;color:#f5f5f5;font-size:15px;text-align:center;letter-spacing:2px;margin-bottom:12px}
+.lock-input:focus{outline:none;border-color:#B8860B}
+.lock-btn{width:100%;padding:11px;background:#B8860B;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.lock-btn:hover{background:#9a7009}
+.lock-err{font-size:12px;color:#e24b4a;margin-top:8px;min-height:16px}
+.app{display:none}
+header{background:#111;border-bottom:1px solid #222;padding:0 2rem;height:56px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.hlogo{width:32px;height:32px;background:#B8860B;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hname{font-size:15px;font-weight:600;color:#f5f5f5}
+.htag{font-size:11px;color:#666;margin-left:auto}
+.main{max-width:900px;margin:0 auto;padding:2rem 1.5rem}
+.page-title{font-size:22px;font-weight:700;color:#f5f5f5;margin-bottom:4px}
+.page-sub{font-size:13px;color:#888;margin-bottom:2rem}
+.card{background:#1a1a1a;border:1px solid #252525;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
+.slabel{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;color:#888}
+.field input,.field select{background:#111;border:1px solid #333;border-radius:7px;color:#f5f5f5;padding:8px 12px;font-size:13px;width:100%}
+.field input:focus,.field select:focus{outline:none;border-color:#B8860B}
+.field select option{background:#111}
+.divider{border:none;border-top:1px solid #222;margin:18px 0}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
+.pc{border:1px solid #2a2a2a;border-radius:8px;padding:10px 8px;cursor:pointer;text-align:center;background:#111;transition:all .15s}
+.pc:hover{border-color:#555}
+.pc.sel{border:1.5px solid #B8860B;background:#1a1400}
+.pc .pn{font-size:11px;font-weight:600;color:#f5f5f5;margin-bottom:3px}
+.pc .pd{font-size:10px;color:#888;line-height:1.4}
+.vgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+.vc{border:1px solid #2a2a2a;border-radius:8px;padding:10px 6px;cursor:pointer;text-align:center;background:#111;transition:all .15s}
+.vc:hover{border-color:#555}
+.vc.sel{border:1.5px solid #B8860B;background:#1a1400}
+.vc .vn{font-size:11px;font-weight:600;color:#f5f5f5;margin-bottom:2px}
+.vc .vp{font-size:10px;color:#888}
+.badge{font-size:10px;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:3px}
+.badge-ok{background:#0d3320;color:#4ade80}
+.badge-warn{background:#3a1a0a;color:#fb923c}
+.badge-info{background:#0a1f3a;color:#60a5fa}
+.badge-na{background:#1a1a1a;color:#555}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #222}
+.srow:last-child{border-bottom:none}
+.srow-label{font-size:13px;color:#ccc}
+.srow-ctrl{display:flex;align-items:center;gap:8px}
+.srow-ctrl input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:#B8860B}
+.srow-ctrl input[type=number]{width:64px;background:#111;border:1px solid #333;border-radius:6px;color:#f5f5f5;padding:5px 8px;font-size:13px}
+.pc-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.pc-tag{min-height:20px;margin-top:4px}
+.result-card{background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:1.25rem;margin-top:16px}
+.prow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.pl{font-size:13px;color:#888}
+.pv{font-size:13px;color:#f5f5f5}
+.trow{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid #2a2a2a;padding-top:12px;margin-top:8px}
+.tl{font-size:15px;font-weight:600;color:#f5f5f5}
+.tv{font-size:26px;font-weight:700;color:#D4AF37}
+.copy-btn{width:100%;margin-top:14px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;border-radius:8px;border:1px solid #B8860B;background:#B8860B;color:#fff;transition:background .15s}
+.copy-btn:hover{background:#9a7009}
+.copy-btn:active{transform:scale(.98)}
+.empty{text-align:center;padding:2rem;color:#555;font-size:13px}
+.pallet-info{font-size:12px;color:#888;margin-bottom:10px;min-height:16px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#D4AF37;color:#0a0a0a;padding:9px 22px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+footer{text-align:center;padding:2rem;font-size:11px;color:#444;border-top:1px solid #1a1a1a;margin-top:2rem}
+@media(max-width:600px){
+  .g3{grid-template-columns:1fr 1fr}
+  .pgrid{grid-template-columns:repeat(2,1fr)}
+  .vgrid{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div class="lock-screen" id="lock">
+  <div class="lock-card">
+    <div class="logo-mark">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
+    </div>
+    <div class="lock-title">Swift Transport</div>
+    <div class="lock-sub">Internal tools — authorised access only</div>
+    <input class="lock-input" type="password" id="pw-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')unlock()" />
+    <button class="lock-btn" onclick="unlock()">Access tools</button>
+    <div class="lock-err" id="pw-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <header>
+    <div class="hlogo">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
+    </div>
+    <span class="hname">Swift Transport</span>
+    <span class="htag">Internal tools · Authorised use only</span>
+  </header>
+
+  <div class="main">
+    <div class="page-title">Pricing Calculator</div>
+    <div class="page-sub">Get road miles from Google Maps, enter job details below</div>
+
+    <div class="card">
+      <div class="slabel">Job details</div>
+      <div class="g3">
+        <div class="field">
+          <label>Road miles (Google Maps)</label>
+          <input type="number" id="miles" min="0" placeholder="e.g. 47" oninput="calc()"/>
+        </div>
+        <div class="field">
+          <label>Service level</label>
+          <select id="service" onchange="calc()">
+            <option value="sameday">Same day (urgent)</option>
+            <option value="nextday" selected>Next day</option>
+            <option value="overnight">Overnight</option>
+            <option value="economy">Economy (3–5 days)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Number of pallets</label>
+          <input type="number" id="num_pallets" min="1" value="1" oninput="calc()"/>
+        </div>
+      </div>
+      <div class="pc-pair">
+        <div class="field">
+          <label>Collection postcode</label>
+          <input type="text" id="from_pc" placeholder="e.g. PE13 1AA" oninput="checkLondon()"/>
+          <div class="pc-tag" id="from_tag"></div>
+        </div>
+        <div class="field">
+          <label>Delivery postcode</label>
+          <input type="text" id="to_pc" placeholder="e.g. SW1A 1AA" oninput="checkLondon()"/>
+          <div class="pc-tag" id="to_tag"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="slabel">Pallet type</div>
+      <div class="pgrid" id="pallet-grid"></div>
+      <div class="pallet-info" id="pallet-info"></div>
+    </div>
+
+    <div class="card">
+      <div class="slabel">Vehicle</div>
+      <div class="vgrid" id="vehicle-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="slabel">Surcharges</div>
+      <div id="london_row" style="display:none" class="srow">
+        <span class="srow-label" id="london_label">London surcharge</span>
+        <span style="font-size:13px;color:#D4AF37;font-weight:600" id="london_val">+£0</span>
+      </div>
+      <div class="srow">
+        <span class="srow-label">Waiting time (after first 30 min)</span>
+        <div class="srow-ctrl">
+          <input type="checkbox" id="s_wait" onchange="toggleWait();calc()"/>
+          <input type="number" id="s_wait_hrs" min="0.5" step="0.5" value="1" style="display:none" oninput="calc()" placeholder="hrs"/>
+          <span id="s_wait_lbl" style="font-size:12px;color:#888;display:none">hrs @ £30/hr</span>
+        </div>
+      </div>
+      <div class="srow">
+        <span class="srow-label">Handballing charge</span>
+        <div class="srow-ctrl">
+          <input type="checkbox" id="s_hand" onchange="calc()"/>
+          <span style="font-size:12px;color:#888">+£30</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="result-area">
+      <div class="empty">Enter miles, select a pallet type and vehicle to generate a quote</div>
+    </div>
+  </div>
+
+  <footer>Swift Transport Internal Tools &nbsp;·&nbsp; Authorised use only &nbsp;·&nbsp; Do not share this URL</footer>
+</div>
+
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<script>
+// CHANGE THIS before deploying
+const PASSWORD = 'CHANGEME';
+
+const PALLETS = [
+  {id:'mq', name:'Medium Quarter', dims:'600×400mm', maxKg:150, maxH:0.75, l:0.6, w:0.4},
+  {id:'q',  name:'Quarter',        dims:'600×400mm', maxKg:250, maxH:1.0,  l:0.6, w:0.4},
+  {id:'h',  name:'Half',           dims:'1000×600mm',maxKg:500, maxH:1.2,  l:1.0, w:0.6},
+  {id:'eu', name:'Euro',           dims:'1200×800mm', maxKg:750, maxH:1.2,  l:1.2, w:0.8},
+  {id:'lg', name:'Large',          dims:'1200×1000mm',maxKg:1000,maxH:1.5,  l:1.2, w:1.0},
+  {id:'fl', name:'Full',           dims:'1200×1000mm',maxKg:1200,maxH:1.8,  l:1.2, w:1.0},
+  {id:'xl', name:'Extra Large',    dims:'1200×1000mm',maxKg:1500,maxH:2.4,  l:1.2, w:1.0},
+];
+
+const VEHICLES = [
+  {id:'small', name:'Small van',  min:45,  maxKg:600,  maxL:2.5, maxW:1.4, maxH:1.2, rates:{sameday:2.20,nextday:1.70,overnight:1.90,economy:1.40}},
+  {id:'swb',   name:'SWB van',   min:55,  maxKg:800,  maxL:2.8, maxW:1.6, maxH:1.4, rates:{sameday:2.40,nextday:1.80,overnight:2.00,economy:1.50}},
+  {id:'lwb',   name:'LWB van',   min:65,  maxKg:1000, maxL:3.5, maxW:1.7, maxH:1.5, rates:{sameday:2.60,nextday:2.00,overnight:2.20,economy:1.70}},
+  {id:'luton', name:'Luton van', min:125, maxKg:1100, maxL:4.2, maxW:2.1, maxH:2.1, rates:{sameday:3.00,nextday:2.40,overnight:2.60,economy:2.00}},
+  {id:'lorry', name:'7.5T lorry',min:195, maxKg:3500, maxL:6.0, maxW:2.4, maxH:2.2, rates:{sameday:4.50,nextday:3.50,overnight:3.80,economy:null}},
+];
+
+const CENTRAL = ['EC','WC'];
+const OUTER   = ['BR','CR','DA','E','EN','HA','IG','KT','N','NW','RM','SE','SM','SW','TW','UB','W','WD'];
+
+let selPallet=null, selVehicle=null;
+
+function unlock(){
+  const val = document.getElementById('pw-input').value;
+  if(val === PASSWORD){
+    document.getElementById('lock').style.display='none';
+    document.getElementById('app').style.display='block';
+    buildPalletGrid(); buildVehicleGrid();
+  } else {
+    document.getElementById('pw-err').textContent='Incorrect password. Try again.';
+    document.getElementById('pw-input').value='';
+  }
+}
+
+function getArea(pc){
+  const m = pc.trim().toUpperCase().replace(/\s+/g,'').match(/^([A-Z]{1,2})/);
+  return m ? m[1] : '';
+}
+
+function londonType(pc){
+  const a = getArea(pc);
+  if(!a) return null;
+  if(CENTRAL.includes(a)) return 'central';
+  if(OUTER.includes(a)) return 'outer';
+  return null;
+}
+
+function checkLondon(){
+  const ft = londonType(document.getElementById('from_pc').value);
+  const tt = londonType(document.getElementById('to_pc').value);
+  document.getElementById('from_tag').innerHTML = ft==='central'
+    ? '<span class="badge badge-warn">Central London</span>'
+    : ft==='outer' ? '<span class="badge badge-info">Outer London / M25</span>' : '';
+  document.getElementById('to_tag').innerHTML = tt==='central'
+    ? '<span class="badge badge-warn">Central London</span>'
+    : tt==='outer' ? '<span class="badge badge-info">Outer London / M25</span>' : '';
+  calc();
+}
+
+function getLondon(){
+  const types = [londonType(document.getElementById('from_pc').value), londonType(document.getElementById('to_pc').value)].filter(Boolean);
+  if(!types.length) return {amount:0,label:''};
+  if(types.includes('central')) return {amount:50,label:'Central London surcharge'};
+  return {amount:20,label:'Outer London / M25 surcharge'};
+}
+
+function buildPalletGrid(){
+  const g = document.getElementById('pallet-grid');
+  g.innerHTML='';
+  PALLETS.forEach(p=>{
+    const d=document.createElement('div');
+    d.className='pc'+(selPallet===p.id?' sel':'');
+    d.innerHTML=`<div class="pn">${p.name}</div><div class="pd">${p.dims}<br>${p.maxKg}kg max</div>`;
+    d.onclick=()=>{selPallet=p.id;buildPalletGrid();updatePalletInfo();suggestVehicle();calc();};
+    g.appendChild(d);
+  });
+}
+
+function updatePalletInfo(){
+  const info=document.getElementById('pallet-info');
+  if(!selPallet){info.textContent='';return;}
+  const p=PALLETS.find(x=>x.id===selPallet);
+  const n=parseInt(document.getElementById('num_pallets').value)||1;
+  info.textContent=`${n} × ${p.name} — up to ${p.maxKg*n}kg total, ${(p.l*n).toFixed(1)}m stacked length, ${p.w}m wide, ${p.maxH}m max height`;
+}
+
+function suggestVehicle(){
+  if(!selPallet) return;
+  const p=PALLETS.find(x=>x.id===selPallet);
+  const n=parseInt(document.getElementById('num_pallets').value)||1;
+  const v=VEHICLES.find(v=>v.maxKg>=p.maxKg*n&&v.maxL>=p.l*n&&v.maxW>=p.w&&v.maxH>=p.maxH);
+  if(v){selVehicle=v.id;buildVehicleGrid();}
+}
+
+function buildVehicleGrid(){
+  const g=document.getElementById('vehicle-grid');
+  const svc=document.getElementById('service').value;
+  g.innerHTML='';
+  VEHICLES.forEach(v=>{
+    const d=document.createElement('div');
+    d.className='vc'+(selVehicle===v.id?' sel':'');
+    let badge='';
+    if(selPallet){
+      const p=PALLETS.find(x=>x.id===selPallet);
+      const n=parseInt(document.getElementById('num_pallets').value)||1;
+      const issues=[];
+      if(p.maxKg*n>v.maxKg) issues.push('overweight');
+      if(p.l*n>v.maxL) issues.push('too long');
+      if(p.w>v.maxW) issues.push('too wide');
+      if(p.maxH>v.maxH) issues.push('too tall');
+      badge=issues.length?`<span class="badge badge-warn">! ${issues[0]}</span>`:`<span class="badge badge-ok">fits</span>`;
+    }
+    const na=v.rates[svc]===null;
+    d.innerHTML=`<div class="vn">${v.name}</div><div class="vp">${v.maxKg}kg max</div>${badge}${na?'<span class="badge badge-na">N/A</span>':''}`;
+    if(!na) d.onclick=()=>{selVehicle=v.id;buildVehicleGrid();calc();};
+    else d.style.opacity='0.35';
+    g.appendChild(d);
+  });
+}
+
+function toggleWait(){
+  const on=document.getElementById('s_wait').checked;
+  document.getElementById('s_wait_hrs').style.display=on?'inline-block':'none';
+  document.getElementById('s_wait_lbl').style.display=on?'inline':'none';
+}
+
+function calc(){
+  updatePalletInfo();
+  buildVehicleGrid();
+  const miles=parseFloat(document.getElementById('miles').value);
+  const svc=document.getElementById('service').value;
+  const area=document.getElementById('result-area');
+  const london=getLondon();
+
+  if(london.amount>0){
+    document.getElementById('london_row').style.display='flex';
+    document.getElementById('london_label').textContent=london.label;
+    document.getElementById('london_val').textContent='+£'+london.amount;
+  } else {
+    document.getElementById('london_row').style.display='none';
+  }
+
+  if(!miles||!selVehicle){
+    area.innerHTML='<div class="empty">Enter miles and select a vehicle to generate a quote</div>';
+    return;
+  }
+
+  const v=VEHICLES.find(x=>x.id===selVehicle);
+  const rate=v.rates[svc];
+  if(!rate){
+    area.innerHTML='<div class="empty" style="color:#fb923c">Economy service not available for 7.5T lorry</div>';
+    return;
+  }
+
+  const n=parseInt(document.getElementById('num_pallets').value)||1;
+  const baseMile=miles*rate;
+  const basePrice=Math.max(baseMile,v.min);
+  const usedMin=basePrice===v.min;
+
+  const surcharges=[];
+  if(london.amount>0) surcharges.push({label:london.label,val:london.amount});
+  if(document.getElementById('s_wait').checked){
+    const hrs=parseFloat(document.getElementById('s_wait_hrs').value)||1;
+    surcharges.push({label:`Waiting time (${hrs}hr${hrs!==1?'s':''})`,val:hrs*30});
+  }
+  if(document.getElementById('s_hand').checked) surcharges.push({label:'Handballing charge',val:30});
+
+  const surchargeTotal=surcharges.reduce((a,b)=>a+b.val,0);
+  const total=basePrice+surchargeTotal;
+
+  const svcLabels={sameday:'Same day',nextday:'Next day',overnight:'Overnight',economy:'Economy'};
+  const palletName=selPallet?PALLETS.find(x=>x.id===selPallet).name:'—';
+  const fromPc=document.getElementById('from_pc').value.toUpperCase()||'—';
+  const toPc=document.getElementById('to_pc').value.toUpperCase()||'—';
+
+  const surchargeRows=surcharges.map(s=>`<div class="prow"><span class="pl">${s.label}</span><span class="pv">£${s.val.toFixed(2)}</span></div>`).join('');
+
+  area.innerHTML=`
+    <div class="result-card">
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#888;margin-bottom:2px">${fromPc} → ${toPc} &nbsp;·&nbsp; ${miles} miles &nbsp;·&nbsp; ${svcLabels[svc]}</div>
+        <div style="font-size:12px;color:#888">${n} × ${palletName} &nbsp;·&nbsp; ${v.name}</div>
+      </div>
+      <div class="prow"><span class="pl">Distance charge (${miles}mi × £${rate.toFixed(2)}/mi)</span><span class="pv">£${baseMile.toFixed(2)}</span></div>
+      ${usedMin?`<div class="prow"><span class="pl" style="color:#fb923c">Minimum charge applied</span><span class="pv" style="color:#fb923c">£${v.min.toFixed(2)}</span></div>`:''}
+      ${surchargeRows}
+      <div class="trow">
+        <span class="tl">Quote price</span>
+        <span class="tv">£${total.toFixed(2)}</span>
+      </div>
+      <button class="copy-btn" onclick="copyQuote(${total.toFixed(2)},'${v.name}','${svcLabels[svc]}',${miles},'${fromPc}','${toPc}',${n},'${palletName}')">Copy quote email to clipboard</button>
+    </div>`;
+}
+
+function copyQuote(total,vehicle,svc,miles,from,to,n,palletName){
+  const lines=[];
+  const london=getLondon();
+  if(london.amount>0) lines.push(`- ${london.label}: £${london.amount.toFixed(2)}`);
+  if(document.getElementById('s_wait').checked){
+    const hrs=parseFloat(document.getElementById('s_wait_hrs').value)||1;
+    lines.push(`- Waiting time (${hrs}hr${hrs!==1?'s':''}): £${(hrs*30).toFixed(2)}`);
+  }
+  if(document.getElementById('s_hand').checked) lines.push('- Handballing charge: £30.00');
+  const surchargeText=lines.length>0?'\nSurcharges:\n'+lines.join('\n')+'\n':'';
+
+  const text=`Thank you for your enquiry with Swift Transport.
+
+We are pleased to provide the following quote:
+
+Service: ${svc}
+Vehicle: ${vehicle}
+Shipment: ${n} × ${palletName}
+Route: ${from} → ${to}
+Distance: ${miles} miles
+${surchargeText}
+Total quote price: £${total.toFixed(2)}
+
+This price is inclusive of collection, transport and delivery. This quote is valid for 48 hours.
+
+To confirm your booking or if you have any questions, please reply to this email or call us on 01945 466466.
+
+Kind regards,
+The Swift Transport Team`;
+
+  navigator.clipboard.writeText(text).then(()=>{
+    const t=document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2000);
+  });
+}
+</script>
+</body>
+</html>
