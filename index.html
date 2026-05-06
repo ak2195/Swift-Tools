@@ -42,7 +42,7 @@ header{background:#111;border-bottom:1px solid #222;padding:0 2rem;height:56px;d
 .pc.sel{border:1.5px solid #B8860B;background:#1a1400}
 .pc .pn{font-size:11px;font-weight:600;color:#f5f5f5;margin-bottom:3px}
 .pc .pd{font-size:10px;color:#888;line-height:1.4}
-.vgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+.vgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px}
 .vc{border:1px solid #2a2a2a;border-radius:8px;padding:10px 6px;cursor:pointer;text-align:center;background:#111;transition:all .15s}
 .vc:hover{border-color:#555}
 .vc.sel{border:1.5px solid #B8860B;background:#1a1400}
@@ -135,16 +135,14 @@ footer{text-align:center;padding:2rem;font-size:11px;color:#444;border-top:1px s
           <input type="number" id="num_pallets" min="1" value="1" oninput="calc()"/>
         </div>
       </div>
-      <div class="pc-pair">
+      <div class="g2">
         <div class="field">
           <label>Collection postcode</label>
-          <input type="text" id="from_pc" placeholder="e.g. PE13 1AA" oninput="checkLondon()"/>
-          <div class="pc-tag" id="from_tag"></div>
+          <input type="text" id="from_pc" placeholder="e.g. PE13 1AA"/>
         </div>
         <div class="field">
           <label>Delivery postcode</label>
-          <input type="text" id="to_pc" placeholder="e.g. SW1A 1AA" oninput="checkLondon()"/>
-          <div class="pc-tag" id="to_tag"></div>
+          <input type="text" id="to_pc" placeholder="e.g. SW1A 1AA"/>
         </div>
       </div>
     </div>
@@ -162,9 +160,19 @@ footer{text-align:center;padding:2rem;font-size:11px;color:#444;border-top:1px s
 
     <div class="card">
       <div class="slabel">Surcharges</div>
-      <div id="london_row" style="display:none" class="srow">
-        <span class="srow-label" id="london_label">London surcharge</span>
-        <span style="font-size:13px;color:#D4AF37;font-weight:600" id="london_val">+£0</span>
+      <div class="srow">
+        <span class="srow-label">Outer London / M25 surcharge</span>
+        <div class="srow-ctrl">
+          <input type="checkbox" id="s_outer" onchange="calc()"/>
+          <span style="font-size:12px;color:#888">+£20</span>
+        </div>
+      </div>
+      <div class="srow">
+        <span class="srow-label">Central London surcharge (EC / WC)</span>
+        <div class="srow-ctrl">
+          <input type="checkbox" id="s_central" onchange="calc()"/>
+          <span style="font-size:12px;color:#888">+£50</span>
+        </div>
       </div>
       <div class="srow">
         <span class="srow-label">Waiting time (after first 30 min)</span>
@@ -195,7 +203,7 @@ footer{text-align:center;padding:2rem;font-size:11px;color:#444;border-top:1px s
 
 <script>
 // CHANGE THIS before deploying
-const PASSWORD = 'Sw!fTLog!st1csPamm1!';
+const PASSWORD = 'CHANGEME';
 
 const PALLETS = [
   {id:'mq', name:'Medium Quarter', dims:'600×400mm', maxKg:150, maxH:0.75, l:0.6, w:0.4},
@@ -208,11 +216,12 @@ const PALLETS = [
 ];
 
 const VEHICLES = [
-  {id:'small', name:'Small van',  min:45,  maxKg:600,  maxL:2.5, maxW:1.4, maxH:1.2, rates:{sameday:2.20,nextday:1.70,overnight:1.90,economy:1.40}},
-  {id:'swb',   name:'SWB van',   min:55,  maxKg:800,  maxL:2.8, maxW:1.6, maxH:1.4, rates:{sameday:2.40,nextday:1.80,overnight:2.00,economy:1.50}},
-  {id:'lwb',   name:'LWB van',   min:65,  maxKg:1000, maxL:3.5, maxW:1.7, maxH:1.5, rates:{sameday:2.60,nextday:2.00,overnight:2.20,economy:1.70}},
-  {id:'luton', name:'Luton van', min:125, maxKg:1100, maxL:4.2, maxW:2.1, maxH:2.1, rates:{sameday:3.00,nextday:2.40,overnight:2.60,economy:2.00}},
-  {id:'lorry', name:'7.5T lorry',min:195, maxKg:3500, maxL:6.0, maxW:2.4, maxH:2.2, rates:{sameday:4.50,nextday:3.50,overnight:3.80,economy:null}},
+  {id:'small', name:'Small van',  min:45,  maxKg:600,  maxL:2.5, maxW:1.4, maxH:1.2, rates:{sameday:1.30,nextday:1.30,overnight:1.30,economy:1.30}},
+  {id:'swb',   name:'SWB van',   min:55,  maxKg:800,  maxL:2.8, maxW:1.6, maxH:1.4, rates:{sameday:1.40,nextday:1.40,overnight:1.40,economy:1.40}},
+  {id:'lwb',   name:'LWB van',   min:65,  maxKg:1000, maxL:3.5, maxW:1.7, maxH:1.5, rates:{sameday:1.60,nextday:1.60,overnight:1.60,economy:1.60}},
+  {id:'xlwb',  name:'XLWB van',  min:65,  maxKg:1100, maxL:4.0, maxW:1.7, maxH:1.5, rates:{sameday:1.90,nextday:1.90,overnight:1.90,economy:1.90}},
+  {id:'luton', name:'Luton van', min:125, maxKg:1100, maxL:4.2, maxW:2.1, maxH:2.1, rates:{sameday:2.00,nextday:2.00,overnight:2.00,economy:2.00}},
+  {id:'lorry', name:'7.5T lorry',min:295, maxKg:3500, maxL:6.0, maxW:2.4, maxH:2.2, rates:{sameday:4.50,nextday:4.50,overnight:4.50,economy:null}},
 ];
 
 const CENTRAL = ['EC','WC'];
@@ -324,6 +333,14 @@ function toggleWait(){
   document.getElementById('s_wait_lbl').style.display=on?'inline':'none';
 }
 
+function getLondon(){
+  const outer = document.getElementById('s_outer').checked;
+  const central = document.getElementById('s_central').checked;
+  if(central) return {amount:50, label:'Central London surcharge'};
+  if(outer) return {amount:20, label:'Outer London / M25 surcharge'};
+  return {amount:0, label:''};
+}
+
 function calc(){
   updatePalletInfo();
   buildVehicleGrid();
@@ -331,14 +348,6 @@ function calc(){
   const svc=document.getElementById('service').value;
   const area=document.getElementById('result-area');
   const london=getLondon();
-
-  if(london.amount>0){
-    document.getElementById('london_row').style.display='flex';
-    document.getElementById('london_label').textContent=london.label;
-    document.getElementById('london_val').textContent='+£'+london.amount;
-  } else {
-    document.getElementById('london_row').style.display='none';
-  }
 
   if(!miles||!selVehicle){
     area.innerHTML='<div class="empty">Enter miles and select a vehicle to generate a quote</div>';
@@ -417,7 +426,7 @@ Total quote price: £${total.toFixed(2)}
 
 This price is inclusive of collection, transport and delivery. This quote is valid for 48 hours.
 
-To confirm your booking or if you have any questions, please reply to this email or call us on 01945 466466.
+To confirm your booking or if you have any questions, please reply to this email or call us on 01733 206666.
 
 Kind regards,
 The Swift Transport Team`;
